@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BudgetMe</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #F2F2F7;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background-color: #FFFFFF;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .monthButton {
+            padding: 0 12px;
+            border: none;
+            background: none;
+            color: #444;
+            font-size: 28px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            line-height: 1;
+        }
+        .monthButton:hover {
+            background: #F2F2F7;
+            color: #007AFF;
+        }
+        .monthText {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 16px;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .summaryRow {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .balanceRow {
+            border-top: 1px solid #E5E5EA;
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+        .income {
+            color: #34C759;
+        }
+        .expense {
+            color: #FF3B30;
+        }
+        .input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #E5E5EA;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #E5E5EA;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .typeContainer {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .typeButton {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #E5E5EA;
+            border-radius: 8px;
+            background-color: #FFFFFF;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .typeButtonActive {
+            background-color: #007AFF;
+            color: #FFFFFF;
+            border-color: #007AFF;
+        }
+        .buttonContainer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .cancelButton {
+            background-color: #F2F2F7;
+            color: #000000;
+        }
+        .saveButton {
+            background-color: #007AFF;
+            color: #FFFFFF;
+        }
+        .transactionItem {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #E5E5EA;
+        }
+        .transactionInfo {
+            flex: 1;
+        }
+        .transactionDescription {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .transactionCategory {
+            font-size: 14px;
+            color: #8E8E93;
+            margin-top: 4px;
+        }
+        .transactionDate {
+            font-size: 14px;
+            color: #8E8E93;
+            margin-top: 4px;
+        }
+        .transactionActions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .actionButton {
+            padding: 8px;
+            border: none;
+            background-color: transparent;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .modalOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal {
+            background-color: white;
+            border-radius: 16px;
+            padding: 16px 10px;
+            width: 96vw;
+            max-width: 400px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.13);
+            box-sizing: border-box;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+        .modalHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .modalTitle {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .closeButton {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #8E8E93;
+        }
+        .modal .input, .modal .select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin-bottom: 8px;
+            border: 1px solid #E5E5EA;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        .modal .typeContainer {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .modal .typeButton {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #E5E5EA;
+            border-radius: 8px;
+            background-color: #FFFFFF;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .modal .typeButtonActive {
+            background-color: #007AFF;
+            color: #FFFFFF;
+            border-color: #007AFF;
+        }
+        .modal .buttonContainer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .modal .button {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        .modal .cancelButton {
+            background-color: #F2F2F7;
+            color: #000000;
+        }
+        .modal .saveButton {
+            background-color: #007AFF;
+            color: #FFFFFF;
+        }
+        .modal .deleteButton {
+            background-color: #FF3B30;
+            color: #fff;
+        }
+        .modal .deleteButton:hover {
+            background-color: #d32d22;
+        }
+        @media (max-width: 500px) {
+            .modal {
+                max-width: 98vw;
+                padding: 8px 2vw;
+            }
+        }
+        .filterBarWrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        .filterBar {
+            display: flex;
+            background: #F2F2F7;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #E5E5EA;
+            width: 100%;
+            max-width: 420px;
+        }
+        .filterBtn {
+            flex: 1;
+            padding: 8px 0;
+            font-size: 15px;
+            font-weight: 500;
+            background: none;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            color: #222;
+            transition: background 0.15s, color 0.15s;
+        }
+        .filterBtn.selected {
+            background: #fff;
+            color: #111;
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        }
+        .filterBtn:not(:last-child) {
+            border-right: 1px solid #E5E5EA;
+        }
+        @media (max-width: 500px) {
+            .filterBar { max-width: 98vw; }
+        }
+        .monthHeader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const categories = [
+            'Affitto', 'Animali', 'Assicurazioni', 'Auto', 'Bollette', 'Carburante',
+            'Intrattenimento', 'Finanziamento', 'Prelievo', 'Ristorante', 'Shopping',
+            'Spesa', 'Stipendio', 'Telefono', 'Tempo Libero', 'Altro'
+        ];
+        const repeatOptions = [
+            { value: 'nessuna', label: 'Non ripetere' },
+            { value: 'giornaliera', label: 'Ogni giorno' },
+            { value: 'settimanale', label: 'Ogni settimana' },
+            { value: 'mensile', label: 'Ogni mese' }
+        ];
+        const FILTERS = [
+            { key: 'tutti', label: 'Tutti' },
+            { key: 'ricorrenti', label: 'Ricorrenti' },
+            { key: 'entrate', label: 'Entrate' },
+            { key: 'uscite', label: 'Uscite' },
+        ];
+
+        function BudgetME() {
+            const [transactions, setTransactions] = useState([]);
+            const [form, setForm] = useState({
+                description: '',
+                amount: '',
+                category: categories[0],
+                type: 'entrata',
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toTimeString().slice(0, 5),
+                repeat: 'nessuna'
+            });
+            const [editingId, setEditingId] = useState(null);
+            const [showModal, setShowModal] = useState(false);
+            const [currentMonth, setCurrentMonth] = useState(new Date());
+            const [filter, setFilter] = useState('tutti');
+            const [showDeleteModal, setShowDeleteModal] = useState(false);
+            const [deleteId, setDeleteId] = useState(null);
+
+            useEffect(() => {
+                const saved = localStorage.getItem('transactions');
+                if (saved) setTransactions(JSON.parse(saved));
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+            }, [transactions]);
+
+            const resetForm = () => setForm({
+                description: '',
+                amount: '',
+                category: categories[0],
+                type: 'entrata',
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toTimeString().slice(0, 5),
+                repeat: 'nessuna'
+            });
+
+            const handleAddOrEdit = () => {
+                const updated = {
+                    ...form,
+                    id: editingId ?? Date.now()
+                };
+
+                if (editingId) {
+                    setTransactions(transactions.map(t => t.id === editingId ? updated : t));
+                    setEditingId(null);
+                } else {
+                    setTransactions([updated, ...transactions]);
+                }
+                resetForm();
+                setShowModal(false);
+            };
+
+            const handleEdit = (id) => {
+                const tx = transactions.find(t => t.id === id);
+                if (tx) {
+                    setForm(tx);
+                    setEditingId(id);
+                    setShowModal(true);
+                }
+            };
+
+            const handleDeleteRequest = (id) => {
+                setDeleteId(id);
+                setShowDeleteModal(true);
+            };
+
+            const handleDeleteConfirm = () => {
+                setTransactions(transactions.filter(t => t.id !== deleteId));
+                setDeleteId(null);
+                setShowDeleteModal(false);
+            };
+
+            const handleDeleteCancel = () => {
+                setDeleteId(null);
+                setShowDeleteModal(false);
+            };
+
+            const formatAmount = (amount) => {
+                return parseFloat(amount).toFixed(2).replace('.', ',');
+            };
+
+            const getDisplayDate = (tx, currentYear, currentMonth) => {
+                if (!tx.date) return null;
+
+                const originalDate = new Date(tx.date);
+                const originalDay = originalDate.getDate();
+                const originalWeekday = originalDate.getDay();
+
+                if (tx.repeat === 'nessuna') return originalDate;
+
+                if (tx.repeat === 'giornaliera') {
+                    return new Date(currentYear, currentMonth, 1);
+                }
+
+                if (tx.repeat === 'settimanale') {
+                    const firstOfMonth = new Date(currentYear, currentMonth, 1);
+                    let displayDate = new Date(firstOfMonth);
+                    const dayDiff = (originalWeekday - displayDate.getDay() + 7) % 7;
+                    displayDate.setDate(displayDate.getDate() + dayDiff);
+                    const lastOfMonth = new Date(currentYear, currentMonth + 1, 0);
+                    if (displayDate > lastOfMonth) return null;
+                    return displayDate;
+                }
+
+                if (tx.repeat === 'mensile') {
+                    const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+                    const day = Math.min(originalDay, lastDay);
+                    return new Date(currentYear, currentMonth, day);
+                }
+
+                return null;
+            };
+
+            const filteredTransactions = () => {
+                const year = currentMonth.getFullYear();
+                const month = currentMonth.getMonth();
+
+                const startOfCurrentMonth = new Date(year, month, 1);
+                const endOfCurrentMonth = new Date(year, month + 1, 0);
+
+                let txs = transactions
+                    .map(tx => {
+                        const displayDate = getDisplayDate(tx, year, month);
+                        return { ...tx, displayDate };
+                    })
+                    .filter(tx => {
+                        if (!tx.displayDate) return false;
+                        if (tx.repeat !== 'nessuna') {
+                            const originalDate = new Date(tx.date);
+                            if (
+                                tx.displayDate.getFullYear() < originalDate.getFullYear() ||
+                                (tx.displayDate.getFullYear() === originalDate.getFullYear() && tx.displayDate.getMonth() < originalDate.getMonth())
+                            ) {
+                                return false;
+                            }
+                        }
+                        return tx.displayDate >= startOfCurrentMonth && tx.displayDate <= endOfCurrentMonth;
+                    });
+
+                if (filter === 'ricorrenti') {
+                    txs = txs.filter(tx => tx.repeat !== 'nessuna');
+                } else if (filter === 'entrate') {
+                    txs = txs.filter(tx => tx.type === 'entrata');
+                } else if (filter === 'uscite') {
+                    txs = txs.filter(tx => tx.type === 'uscita');
+                }
+                return txs.sort((a, b) => a.displayDate - b.displayDate);
+            };
+
+            const filteredTx = filteredTransactions();
+
+            const prevMonth = () => {
+                setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+            };
+
+            const nextMonth = () => {
+                setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+            };
+
+            const monthYearStr = currentMonth.toLocaleString('it-IT', { month: 'long', year: 'numeric' }).toUpperCase();
+
+            const handleCloseModal = () => {
+                setShowModal(false);
+                setEditingId(null);
+                resetForm();
+            };
+
+            return (
+                <div className="container">
+                    <div className="card" style={{ marginBottom: '16px' }}>
+                        <div className="monthHeader">
+                            <button onClick={prevMonth} className="monthButton">{'<'}</button>
+                            <span className="monthText">{monthYearStr}</span>
+                            <button onClick={nextMonth} className="monthButton">{'>'}</button>
+                        </div>
+                        <div className="summaryRow">
+                            <span>Entrate:</span>
+                            <span className="income">
+                                {filteredTx
+                                    .filter(t => t.type === 'entrata')
+                                    .reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0)
+                                    .toFixed(2)
+                                    .replace('.', ',')} €
+                            </span>
+                        </div>
+                        <div className="summaryRow">
+                            <span>Uscite:</span>
+                            <span className="expense">
+                                {filteredTx
+                                    .filter(t => t.type === 'uscita')
+                                    .reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0)
+                                    .toFixed(2)
+                                    .replace('.', ',')} €
+                            </span>
+                        </div>
+                        <div className="summaryRow balanceRow">
+                            <span>Bilancio:</span>
+                            <span className={filteredTx.filter(t => t.type === 'entrata').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) -
+                                filteredTx.filter(t => t.type === 'uscita').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) >= 0
+                                ? 'income'
+                                : 'expense'}>
+                                {(filteredTx.filter(t => t.type === 'entrata').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) -
+                                    filteredTx.filter(t => t.type === 'uscita').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0))
+                                    .toFixed(2)
+                                    .replace('.', ',')} €
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h2>Aggiungi Transazione</h2>
+                        <button
+                            className="button saveButton"
+                            onClick={() => {
+                                resetForm();
+                                setShowModal(true);
+                            }}
+                            style={{ width: '100%', marginBottom: '16px' }}
+                        >
+                            + Nuova Transazione
+                        </button>
+                    </div>
+
+                    <div className="card">
+                        <h2>Lista Transazioni</h2>
+                        <div className="filterBarWrapper">
+                            <div className="filterBar">
+                                {FILTERS.map(f => (
+                                    <button
+                                        key={f.key}
+                                        className={`filterBtn${filter === f.key ? ' selected' : ''}`}
+                                        onClick={() => setFilter(f.key)}
+                                    >
+                                        {f.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        {filteredTransactions().length === 0 ? (
+                            <p style={{ textAlign: 'center', color: '#8E8E93' }}>Nessuna transazione in questo mese.</p>
+                        ) : (
+                            filteredTransactions().map(tx => (
+                                <div key={tx.id} className="transactionItem">
+                                    <div className="transactionInfo">
+                                        <div className="transactionDescription">{tx.description}</div>
+                                        <div className="transactionCategory">{tx.category}</div>
+                                        <div className="transactionDate">
+                                            {tx.displayDate ? tx.displayDate.toLocaleDateString('it-IT') : ''}
+                                            {tx.time && ` - ${tx.time}`}
+                                            {tx.repeat !== 'nessuna' && (
+                                                <span style={{ fontSize: '12px', fontStyle: 'italic' }}>
+                                                    {' '}({repeatOptions.find(r => r.value === tx.repeat)?.label})
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="transactionActions">
+                                        <span className={tx.type === 'entrata' ? 'income' : 'expense'}>
+                                            {formatAmount(tx.amount)} €
+                                        </span>
+                                        <button
+                                            className="actionButton"
+                                            onClick={() => handleEdit(tx.id)}
+                                        >
+                                            ✎
+                                        </button>
+                                        <button
+                                            className="actionButton"
+                                            onClick={() => handleDeleteRequest(tx.id)}
+                                        >
+                                            🗑
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <div className="card">
+                        <h2>Lista Categorie</h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {categories.map(cat => {
+                                const totale = filteredTransactions()
+                                    .filter(t => t.category === cat)
+                                    .reduce((sum, t) => sum + (t.type === 'entrata' ? parseFloat(t.amount || '0') : -parseFloat(t.amount || '0')), 0);
+                                if (totale === 0) return null;
+                                return (
+                                    <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E5EA', padding: '6px 0' }}>
+                                        <span style={{ fontWeight: 500 }}>{cat}</span>
+                                        <span style={{ color: totale >= 0 ? '#34C759' : '#FF3B30', fontWeight: 600 }}>
+                                            {totale >= 0 ? '+' : ''}{totale.toFixed(2).replace('.', ',')} €
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {showModal && (
+                        <div className="modalOverlay">
+                            <div className="modal">
+                                <div className="modalHeader">
+                                    <h2 className="modalTitle">
+                                        {editingId ? 'Modifica Transazione' : 'Nuova Transazione'}
+                                    </h2>
+                                    <button className="closeButton" onClick={handleCloseModal}>×</button>
+                                </div>
+                                <input
+                                    className="input"
+                                    placeholder="Descrizione"
+                                    value={form.description}
+                                    onChange={e => setForm({ ...form, description: e.target.value })}
+                                />
+                                <input
+                                    className="input"
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Importo"
+                                    value={form.amount}
+                                    onChange={e => setForm({ ...form, amount: e.target.value })}
+                                />
+                                <select
+                                    className="select"
+                                    value={form.category}
+                                    onChange={e => setForm({ ...form, category: e.target.value })}
+                                >
+                                    {categories.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+
+                                <div className="typeContainer">
+                                    <button
+                                        className={`typeButton ${form.type === 'entrata' ? 'typeButtonActive' : ''}`}
+                                        onClick={() => setForm({ ...form, type: 'entrata' })}
+                                    >
+                                        Entrata
+                                    </button>
+                                    <button
+                                        className={`typeButton ${form.type === 'uscita' ? 'typeButtonActive' : ''}`}
+                                        onClick={() => setForm({ ...form, type: 'uscita' })}
+                                    >
+                                        Uscita
+                                    </button>
+                                </div>
+
+                                <input
+                                    className="input"
+                                    type="date"
+                                    value={form.date}
+                                    onChange={e => setForm({ ...form, date: e.target.value })}
+                                />
+                                <input
+                                    className="input"
+                                    type="time"
+                                    value={form.time}
+                                    onChange={e => setForm({ ...form, time: e.target.value })}
+                                />
+                                <select
+                                    className="select"
+                                    value={form.repeat}
+                                    onChange={e => setForm({ ...form, repeat: e.target.value })}
+                                >
+                                    {repeatOptions.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+
+                                <div className="buttonContainer">
+                                    <button
+                                        className="button cancelButton"
+                                        onClick={handleCloseModal}
+                                    >
+                                        Annulla
+                                    </button>
+                                    <button
+                                        className="button saveButton"
+                                        onClick={handleAddOrEdit}
+                                    >
+                                        Salva
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showDeleteModal && (
+                        <div className="modalOverlay">
+                            <div className="modal">
+                                <div className="modalHeader">
+                                    <h2 className="modalTitle">Conferma eliminazione</h2>
+                                    <button className="closeButton" onClick={handleDeleteCancel}>×</button>
+                                </div>
+                                <div style={{ marginBottom: 20, fontSize: 16 }}>
+                                    Sei sicuro di voler eliminare questa transazione?
+                                </div>
+                                <div className="buttonContainer">
+                                    <button className="button cancelButton" onClick={handleDeleteCancel}>Annulla</button>
+                                    <button className="button deleteButton" onClick={handleDeleteConfirm}>Elimina</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<BudgetME />);
+    </script>
+</body>
+</html> 
