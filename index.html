@@ -371,6 +371,10 @@
             font-size: 13px;
             margin-left: 8px;
         }
+        .amount {
+            font-size: 18px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -422,6 +426,8 @@
             const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
             const [deleteAccountId, setDeleteAccountId] = useState(null);
             const [accountFilter, setAccountFilter] = useState('');
+            const [selectedTx, setSelectedTx] = useState(null);
+            const [selectedAccount, setSelectedAccount] = useState(null);
 
             useEffect(() => {
                 const saved = localStorage.getItem('transactions');
@@ -685,36 +691,33 @@
                             <div style={{ color: '#8E8E93', textAlign: 'center', margin: 12 }}>Nessun conto creato.</div>
                         )}
                         {accounts.map(acc => (
-                            <div key={acc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E5EA', padding: '8px 0' }}>
+                            <div
+                                key={acc.id}
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    borderBottom: '1px solid #E5E5EA',
+                                    padding: '8px 0',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => setSelectedAccount(acc)}
+                            >
                                 <div>
                                     <div style={{ fontWeight: 600 }}>{acc.name}</div>
                                     <div style={{ fontSize: 13, color: '#8E8E93' }}>Saldo iniziale: {acc.balance.toFixed(2).replace('.', ',')} €</div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span style={{ color: '#34C759', fontWeight: 600, fontSize: 18 }}>
+                                <div>
+                                    <span className="amount" style={{ color: '#34C759' }}>
                                         {getAccountBalance(acc).toFixed(2).replace('.', ',')} €
                                     </span>
-                                    <button
-                                        aria-label="Modifica conto"
-                                        onClick={() => handleEditAccount(acc.id)}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007AFF', fontSize: 18 }}
-                                    >
-                                        ✎
-                                    </button>
-                                    <button
-                                        aria-label="Elimina conto"
-                                        onClick={() => handleDeleteAccountRequest(acc.id)}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#FF3B30', fontSize: 18 }}
-                                    >
-                                        🗑
-                                    </button>
                                 </div>
                             </div>
                         ))}
                         {accounts.length > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600, padding: '8px 0', fontSize: 16 }}>
                                 <span>Totale Conti</span>
-                                <span style={{ color: '#34C759' }}>{totalAccounts.toFixed(2).replace('.', ',')} €</span>
+                                <span className="amount" style={{ color: '#34C759' }}>{totalAccounts.toFixed(2).replace('.', ',')} €</span>
                             </div>
                         )}
                     </div>
@@ -727,7 +730,7 @@
                         </div>
                         <div className="summaryRow">
                             <span>Entrate:</span>
-                            <span className="income">
+                            <span className="income amount">
                                 {filteredTx
                                     .filter(t => t.type === 'entrata')
                                     .reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0)
@@ -737,7 +740,7 @@
                         </div>
                         <div className="summaryRow">
                             <span>Uscite:</span>
-                            <span className="expense">
+                            <span className="expense amount">
                                 {filteredTx
                                     .filter(t => t.type === 'uscita')
                                     .reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0)
@@ -749,8 +752,8 @@
                             <span>Bilancio:</span>
                             <span className={filteredTx.filter(t => t.type === 'entrata').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) -
                                 filteredTx.filter(t => t.type === 'uscita').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) >= 0
-                                ? 'income'
-                                : 'expense'}>
+                                ? 'income amount'
+                                : 'expense amount'}>
                                 {(filteredTx.filter(t => t.type === 'entrata').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) -
                                     filteredTx.filter(t => t.type === 'uscita').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0))
                                     .toFixed(2)
@@ -779,7 +782,7 @@
                                 className="select"
                                 value={accountFilter}
                                 onChange={e => setAccountFilter(e.target.value)}
-                                style={{ width: '420px', maxWidth: '98vw' }}
+                                style={{ width: '420px', maxWidth: '98vw', height: '36px', lineHeight: '36px', padding: '0 12px' }}
                             >
                                 <option value="">Tutti i conti</option>
                                 {accounts.map(acc => (
@@ -791,7 +794,12 @@
                             <p style={{ textAlign: 'center', color: '#8E8E93' }}>Nessuna transazione in questo mese.</p>
                         ) : (
                             filteredTransactions().map(tx => (
-                                <div key={tx.id} className="transactionItem">
+                                <div
+                                    key={tx.id}
+                                    className="transactionItem"
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => setSelectedTx(tx)}
+                                >
                                     <div className="transactionInfo">
                                         <div className="transactionDescription">{tx.description}</div>
                                         <div className="transactionCategory">{tx.category}</div>
@@ -809,23 +817,9 @@
                                         </div>
                                     </div>
                                     <div className="transactionActions">
-                                        <span className={tx.type === 'entrata' ? 'income' : 'expense'}>
+                                        <span className={tx.type === 'entrata' ? 'income amount' : 'expense amount'}>
                                             {formatAmount(tx.amount)} €
                                         </span>
-                                        <button
-                                            aria-label="Modifica transazione"
-                                            onClick={() => handleEdit(tx.id)}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007AFF', fontSize: 18 }}
-                                        >
-                                            ✎
-                                        </button>
-                                        <button
-                                            aria-label="Elimina transazione"
-                                            onClick={() => handleDeleteRequest(tx.id)}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#FF3B30', fontSize: 18 }}
-                                        >
-                                            🗑
-                                        </button>
                                     </div>
                                 </div>
                             ))
@@ -843,7 +837,7 @@
                                 return (
                                     <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E5EA', padding: '6px 0' }}>
                                         <span style={{ fontWeight: 500 }}>{cat}</span>
-                                        <span style={{ color: totale >= 0 ? '#34C759' : '#FF3B30', fontWeight: 600 }}>
+                                        <span className="amount" style={{ color: totale >= 0 ? '#34C759' : '#FF3B30' }}>
                                             {totale >= 0 ? '+' : ''}{totale.toFixed(2).replace('.', ',')} €
                                         </span>
                                     </div>
@@ -1030,6 +1024,70 @@
                                 <div className="buttonContainer">
                                     <button className="button cancelButton" onClick={handleDeleteAccountCancel}>Annulla</button>
                                     <button className="button deleteButton" onClick={handleDeleteAccountConfirm}>Elimina</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedTx && (
+                        <div className="modalOverlay">
+                            <div className="modal">
+                                <div className="modalHeader">
+                                    <h2 className="modalTitle">Dettaglio Transazione</h2>
+                                    <button className="closeButton" onClick={() => setSelectedTx(null)}>×</button>
+                                </div>
+                                <div style={{ marginBottom: 12 }}>
+                                    <div><b>Descrizione:</b> {selectedTx.description}</div>
+                                    <div><b>Importo:</b> <span style={{ color: selectedTx.type === 'entrata' ? '#34C759' : '#FF3B30', fontWeight: 600 }}>{formatAmount(selectedTx.amount)} €</span></div>
+                                    <div><b>Categoria:</b> {selectedTx.category}</div>
+                                    <div><b>Conto:</b> {selectedTx.account || '-'}</div>
+                                    <div><b>Tipo:</b> {selectedTx.type === 'entrata' ? 'Entrata' : 'Uscita'}</div>
+                                    <div><b>Data:</b> {selectedTx.displayDate ? selectedTx.displayDate.toLocaleDateString('it-IT') : selectedTx.date}</div>
+                                    {selectedTx.time && <div><b>Ora:</b> {selectedTx.time}</div>}
+                                    {selectedTx.repeat !== 'nessuna' && <div><b>Ricorrenza:</b> {repeatOptions.find(r => r.value === selectedTx.repeat)?.label}</div>}
+                                </div>
+                                <div className="buttonContainer">
+                                    <button className="button saveButton" onClick={() => { setForm(selectedTx); setEditingId(selectedTx.id); setShowModal(true); setSelectedTx(null); }}>Modifica</button>
+                                    <button className="button deleteButton" onClick={() => { setDeleteId(selectedTx.id); setShowDeleteModal(true); setSelectedTx(null); }}>Elimina</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedAccount && (
+                        <div className="modalOverlay">
+                            <div className="modal">
+                                <div className="modalHeader">
+                                    <h2 className="modalTitle">Dettaglio Conto</h2>
+                                    <button className="closeButton" onClick={() => setSelectedAccount(null)}>×</button>
+                                </div>
+                                <div style={{ marginBottom: 12 }}>
+                                    <div><b>Nome:</b> {selectedAccount.name}</div>
+                                    <div><b>Saldo iniziale:</b> {selectedAccount.balance.toFixed(2).replace('.', ',')} €</div>
+                                    <div><b>Saldo attuale:</b> <span className="amount" style={{ color: '#34C759', fontWeight: 600 }}>{getAccountBalance(selectedAccount).toFixed(2).replace('.', ',')} €</span></div>
+                                    <div style={{ marginTop: 8, fontSize: 13, color: '#8E8E93' }}>
+                                        Il saldo attuale è calcolato sommando il saldo iniziale e tutte le transazioni associate a questo conto.
+                                    </div>
+                                </div>
+                                <div className="buttonContainer">
+                                    <button
+                                        className="button saveButton"
+                                        onClick={() => {
+                                            handleEditAccount(selectedAccount.id);
+                                            setSelectedAccount(null);
+                                        }}
+                                    >
+                                        Modifica
+                                    </button>
+                                    <button
+                                        className="button deleteButton"
+                                        onClick={() => {
+                                            handleDeleteAccountRequest(selectedAccount.id);
+                                            setSelectedAccount(null);
+                                        }}
+                                    >
+                                        Elimina
+                                    </button>
                                 </div>
                             </div>
                         </div>
