@@ -315,6 +315,55 @@
             gap: 8px;
             margin-bottom: 8px;
         }
+        .toggleRow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 0 2px;
+        }
+        .ios-switch {
+            position: relative;
+            width: 44px;
+            height: 26px;
+            display: inline-block;
+        }
+        .ios-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .ios-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            border-radius: 26px;
+            transition: .2s;
+        }
+        .ios-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #fff;
+            border-radius: 50%;
+            transition: .2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .ios-switch input:checked + .ios-slider {
+            background-color: #34C759;
+        }
+        .ios-switch input:checked + .ios-slider:before {
+            transform: translateX(18px);
+        }
+        .oraOpzionale {
+            color: #8E8E93;
+            font-size: 13px;
+            margin-left: 8px;
+        }
     </style>
 </head>
 <body>
@@ -357,6 +406,7 @@
             const [filter, setFilter] = useState('tutti');
             const [showDeleteModal, setShowDeleteModal] = useState(false);
             const [deleteId, setDeleteId] = useState(null);
+            const [showTime, setShowTime] = useState(!!form.time);
 
             useEffect(() => {
                 const saved = localStorage.getItem('transactions');
@@ -693,12 +743,31 @@
                                     value={form.date}
                                     onChange={e => setForm({ ...form, date: e.target.value })}
                                 />
-                                <input
-                                    className="input"
-                                    type="time"
-                                    value={form.time}
-                                    onChange={e => setForm({ ...form, time: e.target.value })}
-                                />
+
+                                <div className="toggleRow">
+                                    <span>Mostra Ora</span>
+                                    <label className="ios-switch">
+                                        <input type="checkbox" checked={showTime} onChange={e => {
+                                            setShowTime(e.target.checked);
+                                            if (!e.target.checked) setForm({ ...form, time: '' });
+                                            else if (!form.time) setForm({ ...form, time: new Date().toTimeString().slice(0, 5) });
+                                        }} />
+                                        <span className="ios-slider"></span>
+                                    </label>
+                                </div>
+                                {showTime && (
+                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                                        <input
+                                            className="input"
+                                            type="time"
+                                            value={form.time}
+                                            onChange={e => setForm({ ...form, time: e.target.value })}
+                                            style={{ marginBottom: 0, flex: '0 1 120px' }}
+                                        />
+                                        <span className="oraOpzionale">(opzionale)</span>
+                                    </div>
+                                )}
+
                                 <select
                                     className="select"
                                     value={form.repeat}
