@@ -398,6 +398,9 @@
 
         function BudgetME() {
             const [transactions, setTransactions] = useState([]);
+            const [accounts, setAccounts] = useState([]);
+            const [showAccountModal, setShowAccountModal] = useState(false);
+            const [accountForm, setAccountForm] = useState({ name: '', balance: '' });
             const [form, setForm] = useState({
                 description: '',
                 amount: '',
@@ -405,7 +408,8 @@
                 type: 'entrata',
                 date: new Date().toISOString().split('T')[0],
                 time: new Date().toTimeString().slice(0, 5),
-                repeat: 'nessuna'
+                repeat: 'nessuna',
+                account: ''
             });
             const [editingId, setEditingId] = useState(null);
             const [showModal, setShowModal] = useState(false);
@@ -414,15 +418,24 @@
             const [showDeleteModal, setShowDeleteModal] = useState(false);
             const [deleteId, setDeleteId] = useState(null);
             const [showTime, setShowTime] = useState(!!form.time);
+            const [editingAccountId, setEditingAccountId] = useState(null);
+            const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+            const [deleteAccountId, setDeleteAccountId] = useState(null);
+            const [accountFilter, setAccountFilter] = useState('');
 
             useEffect(() => {
                 const saved = localStorage.getItem('transactions');
                 if (saved) setTransactions(JSON.parse(saved));
+                const savedAccounts = localStorage.getItem('accounts');
+                if (savedAccounts) setAccounts(JSON.parse(savedAccounts));
             }, []);
 
             useEffect(() => {
                 localStorage.setItem('transactions', JSON.stringify(transactions));
             }, [transactions]);
+            useEffect(() => {
+                localStorage.setItem('accounts', JSON.stringify(accounts));
+            }, [accounts]);
 
             const resetForm = () => setForm({
                 description: '',
@@ -431,8 +444,24 @@
                 type: 'entrata',
                 date: new Date().toISOString().split('T')[0],
                 time: new Date().toTimeString().slice(0, 5),
-                repeat: 'nessuna'
+                repeat: 'nessuna',
+                account: ''
             });
+
+            const handleAddAccount = () => {
+                if (!accountForm.name.trim() || isNaN(parseFloat(accountForm.balance))) return;
+                if (editingAccountId) {
+                    setAccounts(accounts.map(a => a.id === editingAccountId ? { ...a, name: accountForm.name.trim(), balance: parseFloat(accountForm.balance) } : a));
+                    setEditingAccountId(null);
+                } else {
+                    setAccounts([
+                        ...accounts,
+                        { id: Date.now(), name: accountForm.name.trim(), balance: parseFloat(accountForm.balance) }
+                    ]);
+                }
+                setAccountForm({ name: '', balance: '' });
+                setShowAccountModal(false);
+            };
 
             const handleAddOrEdit = () => {
                 const updated = {
@@ -473,6 +502,31 @@
             const handleDeleteCancel = () => {
                 setDeleteId(null);
                 setShowDeleteModal(false);
+            };
+
+            const handleEditAccount = (id) => {
+                const acc = accounts.find(a => a.id === id);
+                if (acc) {
+                    setAccountForm({ name: acc.name, balance: acc.balance.toString() });
+                    setEditingAccountId(id);
+                    setShowAccountModal(true);
+                }
+            };
+
+            const handleDeleteAccountRequest = (id) => {
+                setDeleteAccountId(id);
+                setShowDeleteAccountModal(true);
+            };
+
+            const handleDeleteAccountConfirm = () => {
+                setAccounts(accounts.filter(a => a.id !== deleteAccountId));
+                setShowDeleteAccountModal(false);
+                setDeleteAccountId(null);
+            };
+
+            const handleDeleteAccountCancel = () => {
+                setShowDeleteAccountModal(false);
+                setDeleteAccountId(null);
             };
 
             const formatAmount = (amount) => {
@@ -537,6 +591,10 @@
                         return tx.displayDate >= startOfCurrentMonth && tx.displayDate <= endOfCurrentMonth;
                     });
 
+                if (accountFilter) {
+                    txs = txs.filter(tx => tx.account === accountFilter);
+                }
+
                 if (filter === 'ricorrenti') {
                     txs = txs.filter(tx => tx.repeat !== 'nessuna');
                 } else if (filter === 'entrate') {
@@ -565,8 +623,102 @@
                 resetForm();
             };
 
+            const getAccountBalance = (account) => {
+                const txSum = transactions
+                    .filter(t => t.account === account.name)
+                    .reduce((sum, t) => sum + (t.type === 'entrata' ? parseFloat(t.amount || '0') : -parseFloat(t.amount || '0')), 0);
+                return account.balance + txSum;
+            };
+            const totalAccounts = accounts.reduce((sum, acc) => sum + getAccountBalance(acc), 0);
+
             return (
                 <div className="container">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                        <span style={{ fontWeight: 700, fontSize: 32, letterSpacing: -1 }}>BudgetMe</span>
+                        <button
+                            aria-label="Aggiungi transazione"
+                            onClick={() => { resetForm(); setShowModal(true); }}
+                            style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                background: '#007AFF',
+                                color: '#fff',
+                                border: 'none',
+                                fontSize: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            +
+                        </button>
+                    </div>
+
+                    <div className="card">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <span style={{ fontWeight: 600, fontSize: 18 }}>I Miei Conti</span>
+                            <button
+                                aria-label="Aggiungi conto"
+                                onClick={() => setShowAccountModal(true)}
+                                style={{
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: '50%',
+                                    background: '#007AFF',
+                                    color: '#fff',
+                                    border: 'none',
+                                    fontSize: 16,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                +
+                            </button>
+                        </div>
+                        {accounts.length === 0 && (
+                            <div style={{ color: '#8E8E93', textAlign: 'center', margin: 12 }}>Nessun conto creato.</div>
+                        )}
+                        {accounts.map(acc => (
+                            <div key={acc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E5EA', padding: '8px 0' }}>
+                                <div>
+                                    <div style={{ fontWeight: 600 }}>{acc.name}</div>
+                                    <div style={{ fontSize: 13, color: '#8E8E93' }}>Saldo iniziale: {acc.balance.toFixed(2).replace('.', ',')} €</div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{ color: '#34C759', fontWeight: 600, fontSize: 18 }}>
+                                        {getAccountBalance(acc).toFixed(2).replace('.', ',')} €
+                                    </span>
+                                    <button
+                                        aria-label="Modifica conto"
+                                        onClick={() => handleEditAccount(acc.id)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007AFF', fontSize: 18 }}
+                                    >
+                                        ✎
+                                    </button>
+                                    <button
+                                        aria-label="Elimina conto"
+                                        onClick={() => handleDeleteAccountRequest(acc.id)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#FF3B30', fontSize: 18 }}
+                                    >
+                                        🗑
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {accounts.length > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600, padding: '8px 0', fontSize: 16 }}>
+                                <span>Totale Conti</span>
+                                <span style={{ color: '#34C759' }}>{totalAccounts.toFixed(2).replace('.', ',')} €</span>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="card" style={{ marginBottom: '16px' }}>
                         <div className="monthHeader">
                             <button onClick={prevMonth} className="monthButton">{'<'}</button>
@@ -608,20 +760,6 @@
                     </div>
 
                     <div className="card">
-                        <h2>Aggiungi Transazione</h2>
-                        <button
-                            className="button saveButton"
-                            onClick={() => {
-                                resetForm();
-                                setShowModal(true);
-                            }}
-                            style={{ width: '100%', marginBottom: '16px' }}
-                        >
-                            + Nuova Transazione
-                        </button>
-                    </div>
-
-                    <div className="card">
                         <h2>Lista Transazioni</h2>
                         <div className="filterBarWrapper">
                             <div className="filterBar">
@@ -636,6 +774,19 @@
                                 ))}
                             </div>
                         </div>
+                        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
+                            <select
+                                className="select"
+                                value={accountFilter}
+                                onChange={e => setAccountFilter(e.target.value)}
+                                style={{ width: '420px', maxWidth: '98vw' }}
+                            >
+                                <option value="">Tutti i conti</option>
+                                {accounts.map(acc => (
+                                    <option key={acc.id} value={acc.name}>{acc.name}</option>
+                                ))}
+                            </select>
+                        </div>
                         {filteredTransactions().length === 0 ? (
                             <p style={{ textAlign: 'center', color: '#8E8E93' }}>Nessuna transazione in questo mese.</p>
                         ) : (
@@ -645,6 +796,9 @@
                                         <div className="transactionDescription">{tx.description}</div>
                                         <div className="transactionCategory">{tx.category}</div>
                                         <div className="transactionDate">
+                                            {tx.account && (
+                                                <span style={{ color: '#8E8E93', fontSize: 13 }}>{tx.account} - </span>
+                                            )}
                                             {tx.displayDate ? tx.displayDate.toLocaleDateString('it-IT') : ''}
                                             {tx.time && ` - ${tx.time}`}
                                             {tx.repeat !== 'nessuna' && (
@@ -659,14 +813,16 @@
                                             {formatAmount(tx.amount)} €
                                         </span>
                                         <button
-                                            className="actionButton"
+                                            aria-label="Modifica transazione"
                                             onClick={() => handleEdit(tx.id)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007AFF', fontSize: 18 }}
                                         >
                                             ✎
                                         </button>
                                         <button
-                                            className="actionButton"
+                                            aria-label="Elimina transazione"
                                             onClick={() => handleDeleteRequest(tx.id)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#FF3B30', fontSize: 18 }}
                                         >
                                             🗑
                                         </button>
@@ -785,6 +941,17 @@
                                     ))}
                                 </select>
 
+                                <select
+                                    className="select"
+                                    value={form.account}
+                                    onChange={e => setForm({ ...form, account: e.target.value })}
+                                >
+                                    <option value="">Seleziona conto</option>
+                                    {accounts.map(acc => (
+                                        <option key={acc.id} value={acc.name}>{acc.name}</option>
+                                    ))}
+                                </select>
+
                                 <div className="buttonContainer">
                                     <button
                                         className="button cancelButton"
@@ -816,6 +983,53 @@
                                 <div className="buttonContainer">
                                     <button className="button cancelButton" onClick={handleDeleteCancel}>Annulla</button>
                                     <button className="button deleteButton" onClick={handleDeleteConfirm}>Elimina</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showAccountModal && (
+                        <div className="modalOverlay">
+                            <div className="modal">
+                                <div className="modalHeader">
+                                    <h2 className="modalTitle">{editingAccountId ? 'Modifica Conto' : 'Nuovo Conto'}</h2>
+                                    <button className="closeButton" onClick={() => { setShowAccountModal(false); setEditingAccountId(null); }}>×</button>
+                                </div>
+                                <input
+                                    className="input"
+                                    placeholder="Nome conto"
+                                    value={accountForm.name}
+                                    onChange={e => setAccountForm({ ...accountForm, name: e.target.value })}
+                                />
+                                <input
+                                    className="input"
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="Saldo iniziale"
+                                    value={accountForm.balance}
+                                    onChange={e => setAccountForm({ ...accountForm, balance: e.target.value })}
+                                />
+                                <div className="buttonContainer">
+                                    <button className="button cancelButton" onClick={() => { setShowAccountModal(false); setEditingAccountId(null); }}>Annulla</button>
+                                    <button className="button saveButton" onClick={handleAddAccount}>Salva</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showDeleteAccountModal && (
+                        <div className="modalOverlay">
+                            <div className="modal">
+                                <div className="modalHeader">
+                                    <h2 className="modalTitle">Conferma eliminazione conto</h2>
+                                    <button className="closeButton" onClick={handleDeleteAccountCancel}>×</button>
+                                </div>
+                                <div style={{ marginBottom: 20, fontSize: 16 }}>
+                                    Sei sicuro di voler eliminare questo conto?
+                                </div>
+                                <div className="buttonContainer">
+                                    <button className="button cancelButton" onClick={handleDeleteAccountCancel}>Annulla</button>
+                                    <button className="button deleteButton" onClick={handleDeleteAccountConfirm}>Elimina</button>
                                 </div>
                             </div>
                         </div>
