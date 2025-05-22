@@ -103,17 +103,23 @@
         }
         .typeButton {
             flex: 1;
-            padding: 12px;
-            border: 1px solid #E5E5EA;
-            border-radius: 8px;
-            background-color: #FFFFFF;
+            padding: 8px 0;
+            font-size: 15px;
+            font-weight: 500;
+            background: none;
+            border: none;
+            outline: none;
             cursor: pointer;
-            font-size: 16px;
+            color: #222;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s;
         }
-        .typeButtonActive {
-            background-color: #007AFF;
-            color: #FFFFFF;
-            border-color: #007AFF;
+        .typeButton.typeButtonActive {
+            background: #fff;
+            color: #111;
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+            border: 1.5px solid #007AFF;
         }
         .buttonContainer {
             display: flex;
@@ -195,6 +201,7 @@
             box-sizing: border-box;
             overflow-y: auto;
             max-height: 90vh;
+            border: 1px solid #444;
         }
         .modalHeader {
             display: flex;
@@ -228,18 +235,19 @@
             margin-bottom: 8px;
         }
         .modal .typeButton {
-            flex: 1;
-            padding: 10px;
             border: 1px solid #E5E5EA;
-            border-radius: 8px;
-            background-color: #FFFFFF;
-            cursor: pointer;
-            font-size: 15px;
+            background: none;
+            color: #222;
         }
-        .modal .typeButtonActive {
-            background-color: #007AFF;
-            color: #FFFFFF;
-            border-color: #007AFF;
+        .modal .typeButton.typeButtonActive {
+            background: #E5E5EA;
+            color: #111;
+            border: 1px solid #E5E5EA;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        }
+        .modal .typeButton:not(.typeButtonActive):hover {
+            background: #F2F2F7;
+            color: #111;
         }
         .modal .buttonContainer {
             display: flex;
@@ -375,6 +383,113 @@
             font-size: 18px;
             font-weight: 600;
         }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #18181a;
+                color: #f2f2f7;
+            }
+            .card {
+                background-color: #23232a;
+                color: #f2f2f7;
+            }
+            .input, .select {
+                background-color: #23232a;
+                color: #f2f2f7;
+                border-color: #333;
+            }
+            .monthButton {
+                color: #f2f2f7;
+            }
+            .filterBar {
+                background: #23232a;
+                border-color: #444;
+            }
+            .filterBtn {
+                color: #ccc;
+            }
+            .filterBtn.selected {
+                background: #18181a;
+                color: #fff;
+            }
+            .filterBtn:not(.selected):hover {
+                background: #23232a;
+                color: #fff;
+            }
+            .modal {
+                background-color: #23232a;
+                color: #f2f2f7;
+            }
+            .modal .input, .modal .select {
+                background-color: #18181a;
+                color: #f2f2f7;
+                border-color: #333;
+            }
+            .transactionItem {
+                border-bottom: 1px solid #333;
+            }
+            .summaryRow, .balanceRow {
+                color: #f2f2f7;
+            }
+            .typeButton {
+                background: none;
+                color: #ccc;
+                border: none;
+            }
+            .typeButton.typeButtonActive {
+                background: #18181a;
+                color: #fff;
+                border: 1.5px solid #007AFF;
+            }
+            .typeButtonActive.uscita {
+                background-color: #FF3B30;
+                border-color: #FF3B30;
+            }
+            .button.cancelButton {
+                background: none;
+                color: #f2f2f7;
+                border: 1.5px solid #444;
+            }
+            .button.saveButton {
+                background: #007AFF;
+                color: #fff;
+                border: none;
+            }
+            .button.saveButton:hover {
+                background: #0051c6;
+            }
+            .button.deleteButton {
+                background: #FF3B30;
+                color: #fff;
+                border: none;
+            }
+            .button.deleteButton:hover {
+                background: #c8231a;
+            }
+            .modal .typeButton {
+                border: 1px solid #444;
+                background: none;
+                color: #ccc;
+            }
+            .modal .typeButton.typeButtonActive {
+                background: #18181a;
+                color: #fff;
+                border: 1px solid #444;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+            }
+            .modal .typeButton:not(.typeButtonActive):hover {
+                background: #23232a;
+                color: #fff;
+            }
+        }
+        /* INPUT IMPORTO: tolgo le frecce */
+        .input[type="number"]::-webkit-inner-spin-button,
+        .input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .input[type="number"] {
+            -moz-appearance: textfield;
+        }
     </style>
 </head>
 <body>
@@ -391,7 +506,10 @@
             { value: 'nessuna', label: 'Non ripetere' },
             { value: 'giornaliera', label: 'Ogni giorno' },
             { value: 'settimanale', label: 'Ogni settimana' },
-            { value: 'mensile', label: 'Ogni mese' }
+            { value: 'mensile', label: 'Ogni mese' },
+            { value: 'trimestrale', label: 'Ogni 3 mesi' },
+            { value: 'semestrale', label: 'Ogni 6 mesi' },
+            { value: 'annuale', label: 'Ogni anno' }
         ];
         const FILTERS = [
             { key: 'tutti', label: 'Tutti' },
@@ -413,7 +531,8 @@
                 date: new Date().toISOString().split('T')[0],
                 time: new Date().toTimeString().slice(0, 5),
                 repeat: 'nessuna',
-                account: ''
+                account: '',
+                endDate: ''
             });
             const [editingId, setEditingId] = useState(null);
             const [showModal, setShowModal] = useState(false);
@@ -451,7 +570,8 @@
                 date: new Date().toISOString().split('T')[0],
                 time: new Date().toTimeString().slice(0, 5),
                 repeat: 'nessuna',
-                account: ''
+                account: '',
+                endDate: ''
             });
 
             const handleAddAccount = () => {
@@ -568,7 +688,84 @@
                     return new Date(currentYear, currentMonth, day);
                 }
 
-                return null;
+                // Ogni 3 mesi
+                if (tx.repeat === 'trimestrale') {
+                    const originalMonth = originalDate.getMonth();
+                    const monthsDiff = (currentYear - originalDate.getFullYear()) * 12 + (currentMonth - originalMonth);
+                    if (monthsDiff % 3 === 0 && monthsDiff >= 0) {
+                        const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+                        const day = Math.min(originalDay, lastDay);
+                        return new Date(currentYear, currentMonth, day);
+                    }
+                    return null;
+                }
+
+                // Ogni 6 mesi
+                if (tx.repeat === 'semestrale') {
+                    const originalMonth = originalDate.getMonth();
+                    const monthsDiff = (currentYear - originalDate.getFullYear()) * 12 + (currentMonth - originalMonth);
+                    if (monthsDiff % 6 === 0 && monthsDiff >= 0) {
+                        const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+                        const day = Math.min(originalDay, lastDay);
+                        return new Date(currentYear, currentMonth, day);
+                    }
+                    return null;
+                }
+
+                // Ogni anno
+                if (tx.repeat === 'annuale') {
+                    if (currentMonth === originalDate.getMonth() && currentYear >= originalDate.getFullYear()) {
+                        const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+                        const day = Math.min(originalDay, lastDay);
+                        return new Date(currentYear, currentMonth, day);
+                    }
+                    return null;
+                }
+
+                let displayDate = null;
+                if (tx.repeat === 'nessuna') {
+                    displayDate = originalDate;
+                } else if (tx.repeat === 'giornaliera') {
+                    displayDate = new Date(currentYear, currentMonth, 1);
+                } else if (tx.repeat === 'settimanale') {
+                    const firstOfMonth = new Date(currentYear, currentMonth, 1);
+                    let displayDate = new Date(firstOfMonth);
+                    const dayDiff = (originalWeekday - displayDate.getDay() + 7) % 7;
+                    displayDate.setDate(displayDate.getDate() + dayDiff);
+                    const lastOfMonth = new Date(currentYear, currentMonth + 1, 0);
+                    if (displayDate > lastOfMonth) return null;
+                } else if (tx.repeat === 'mensile') {
+                    const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+                    const day = Math.min(originalDay, lastDay);
+                    displayDate = new Date(currentYear, currentMonth, day);
+                } else if (tx.repeat === 'trimestrale') {
+                    const originalMonth = originalDate.getMonth();
+                    const monthsDiff = (currentYear - originalDate.getFullYear()) * 12 + (currentMonth - originalMonth);
+                    if (monthsDiff % 3 === 0 && monthsDiff >= 0) {
+                        const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+                        const day = Math.min(originalDay, lastDay);
+                        displayDate = new Date(currentYear, currentMonth, day);
+                    }
+                } else if (tx.repeat === 'semestrale') {
+                    const originalMonth = originalDate.getMonth();
+                    const monthsDiff = (currentYear - originalDate.getFullYear()) * 12 + (currentMonth - originalMonth);
+                    if (monthsDiff % 6 === 0 && monthsDiff >= 0) {
+                        const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+                        const day = Math.min(originalDay, lastDay);
+                        displayDate = new Date(currentYear, currentMonth, day);
+                    }
+                } else if (tx.repeat === 'annuale') {
+                    if (currentMonth === originalDate.getMonth() && currentYear >= originalDate.getFullYear()) {
+                        const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+                        const day = Math.min(originalDay, lastDay);
+                        displayDate = new Date(currentYear, currentMonth, day);
+                    }
+                }
+
+                if (displayDate && tx.endDate) {
+                    if (new Date(displayDate) > new Date(tx.endDate)) return null;
+                }
+                return displayDate;
             };
 
             const filteredTransactions = () => {
@@ -630,8 +827,23 @@
             };
 
             const getAccountBalance = (account) => {
+                const today = new Date();
                 const txSum = transactions
                     .filter(t => t.account === account.name)
+                    .filter(t => {
+                        let txDate;
+                        if (t.displayDate) {
+                            txDate = new Date(t.displayDate);
+                        } else if (t.date) {
+                            txDate = new Date(t.date);
+                        } else {
+                            return false;
+                        }
+                        txDate.setHours(0,0,0,0);
+                        const todayMidnight = new Date(today);
+                        todayMidnight.setHours(0,0,0,0);
+                        return txDate <= todayMidnight;
+                    })
                     .reduce((sum, t) => sum + (t.type === 'entrata' ? parseFloat(t.amount || '0') : -parseFloat(t.amount || '0')), 0);
                 return account.balance + txSum;
             };
@@ -863,7 +1075,7 @@
                                 />
                                 <input
                                     className="input"
-                                    type="number"
+                                    type="text"
                                     step="0.01"
                                     placeholder="Importo"
                                     value={form.amount}
@@ -934,6 +1146,31 @@
                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                                     ))}
                                 </select>
+                                {form.repeat !== 'nessuna' && (
+                                    <div style={{ marginBottom: 8 }}>
+                                        <label style={{ fontSize: 15, fontWeight: 500, display: 'block', marginBottom: 4 }}>Data di fine</label>
+                                        <select
+                                            className="select"
+                                            value={form.endDate === '' ? 'never' : 'date'}
+                                            onChange={e => {
+                                                if (e.target.value === 'never') setForm({ ...form, endDate: '' });
+                                                else setForm({ ...form, endDate: new Date().toISOString().split('T')[0] });
+                                            }}
+                                        >
+                                            <option value="never">Mai</option>
+                                            <option value="date">Seleziona data...</option>
+                                        </select>
+                                        {form.endDate !== '' && (
+                                            <input
+                                                className="input"
+                                                type="date"
+                                                value={form.endDate}
+                                                min={form.date}
+                                                onChange={e => setForm({ ...form, endDate: e.target.value })}
+                                            />
+                                        )}
+                                    </div>
+                                )}
 
                                 <select
                                     className="select"
@@ -997,7 +1234,7 @@
                                 />
                                 <input
                                     className="input"
-                                    type="number"
+                                    type="text"
                                     step="0.01"
                                     placeholder="Saldo iniziale"
                                     value={accountForm.balance}
