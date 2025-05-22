@@ -547,6 +547,10 @@
             const [accountFilter, setAccountFilter] = useState('');
             const [selectedTx, setSelectedTx] = useState(null);
             const [selectedAccount, setSelectedAccount] = useState(null);
+            const [showSearchModal, setShowSearchModal] = useState(false);
+            const [searchFrom, setSearchFrom] = useState('');
+            const [searchTo, setSearchTo] = useState('');
+            const [searchResults, setSearchResults] = useState([]);
 
             useEffect(() => {
                 const saved = localStorage.getItem('transactions');
@@ -655,8 +659,11 @@
                 setDeleteAccountId(null);
             };
 
-            const formatAmount = (amount) => {
-                return parseFloat(amount).toFixed(2).replace('.', ',');
+            const formatAmount = (amount, type = null) => {
+                const value = parseFloat(amount);
+                if (type === 'entrata') return `+${value.toFixed(2).replace('.', ',')}`;
+                if (type === 'uscita') return `-${value.toFixed(2).replace('.', ',')}`;
+                return value >= 0 ? `+${value.toFixed(2).replace('.', ',')}` : `${value.toFixed(2).replace('.', ',')}`;
             };
 
             const getDisplayDate = (tx, currentYear, currentMonth) => {
@@ -853,26 +860,52 @@
                 <div className="container">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
                         <span style={{ fontWeight: 700, fontSize: 32, letterSpacing: -1 }}>BudgetMe</span>
-                        <button
-                            aria-label="Aggiungi transazione"
-                            onClick={() => { resetForm(); setShowModal(true); }}
-                            style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: '50%',
-                                background: '#007AFF',
-                                color: '#fff',
-                                border: 'none',
-                                fontSize: 24,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                                cursor: 'pointer',
-                            }}
-                        >
-                            +
-                        </button>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button
+                                aria-label="Cerca transazione"
+                                onClick={() => setShowSearchModal(true)}
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: '50%',
+                                    background: '#E5E5EA',
+                                    color: '#444',
+                                    border: 'none',
+                                    fontSize: 20,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                                    cursor: 'pointer',
+                                    marginRight: 6
+                                }}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="9" cy="9" r="7" stroke="#444" strokeWidth="2" />
+                                    <line x1="14.2" y1="14.2" x2="18" y2="18" stroke="#444" strokeWidth="2" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                            <button
+                                aria-label="Aggiungi transazione"
+                                onClick={() => { resetForm(); setShowModal(true); }}
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: '50%',
+                                    background: '#007AFF',
+                                    color: '#fff',
+                                    border: 'none',
+                                    fontSize: 24,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                +
+                            </button>
+                        </div>
                     </div>
 
                     <div className="card">
@@ -917,11 +950,11 @@
                             >
                                 <div>
                                     <div style={{ fontWeight: 600 }}>{acc.name}</div>
-                                    <div style={{ fontSize: 13, color: '#8E8E93' }}>Saldo iniziale: {acc.balance.toFixed(2).replace('.', ',')} €</div>
+                                    <div style={{ fontSize: 13, color: '#8E8E93' }}>Saldo iniziale: {acc.balance >= 0 ? '+' : '-'}{Math.abs(acc.balance).toFixed(2).replace('.', ',')} €</div>
                                 </div>
                                 <div>
-                                    <span className="amount" style={{ color: '#34C759' }}>
-                                        {getAccountBalance(acc).toFixed(2).replace('.', ',')} €
+                                    <span className="amount" style={{ color: getAccountBalance(acc) >= 0 ? '#34C759' : '#FF3B30' }}>
+                                        {getAccountBalance(acc) >= 0 ? '+' : '-'}{Math.abs(getAccountBalance(acc)).toFixed(2).replace('.', ',')} €
                                     </span>
                                 </div>
                             </div>
@@ -929,7 +962,9 @@
                         {accounts.length > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600, padding: '8px 0', fontSize: 16 }}>
                                 <span>Totale Conti</span>
-                                <span className="amount" style={{ color: '#34C759' }}>{totalAccounts.toFixed(2).replace('.', ',')} €</span>
+                                <span className="amount" style={{ color: totalAccounts >= 0 ? '#34C759' : '#FF3B30' }}>
+                                    {totalAccounts >= 0 ? '+' : '-'}{Math.abs(totalAccounts).toFixed(2).replace('.', ',')} €
+                                </span>
                             </div>
                         )}
                     </div>
@@ -943,7 +978,7 @@
                         <div className="summaryRow">
                             <span>Entrate:</span>
                             <span className="income amount">
-                                {filteredTx
+                                +{filteredTx
                                     .filter(t => t.type === 'entrata')
                                     .reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0)
                                     .toFixed(2)
@@ -953,7 +988,7 @@
                         <div className="summaryRow">
                             <span>Uscite:</span>
                             <span className="expense amount">
-                                {filteredTx
+                                -{filteredTx
                                     .filter(t => t.type === 'uscita')
                                     .reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0)
                                     .toFixed(2)
@@ -966,7 +1001,9 @@
                                 filteredTx.filter(t => t.type === 'uscita').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) >= 0
                                 ? 'income amount'
                                 : 'expense amount'}>
-                                {(filteredTx.filter(t => t.type === 'entrata').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) -
+                                {filteredTx.filter(t => t.type === 'entrata').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) -
+                                    filteredTx.filter(t => t.type === 'uscita').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) >= 0 ? '+' : '-'}
+                                {Math.abs(filteredTx.filter(t => t.type === 'entrata').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) -
                                     filteredTx.filter(t => t.type === 'uscita').reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0))
                                     .toFixed(2)
                                     .replace('.', ',')} €
@@ -1030,7 +1067,7 @@
                                     </div>
                                     <div className="transactionActions">
                                         <span className={tx.type === 'entrata' ? 'income amount' : 'expense amount'}>
-                                            {formatAmount(tx.amount)} €
+                                            {formatAmount(tx.amount, tx.type)} €
                                         </span>
                                     </div>
                                 </div>
@@ -1050,7 +1087,7 @@
                                     <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E5EA', padding: '6px 0' }}>
                                         <span style={{ fontWeight: 500 }}>{cat}</span>
                                         <span className="amount" style={{ color: totale >= 0 ? '#34C759' : '#FF3B30' }}>
-                                            {totale >= 0 ? '+' : ''}{totale.toFixed(2).replace('.', ',')} €
+                                            {totale >= 0 ? '+' : '-'}{Math.abs(totale).toFixed(2).replace('.', ',')} €
                                         </span>
                                     </div>
                                 );
@@ -1275,7 +1312,7 @@
                                 </div>
                                 <div style={{ marginBottom: 12 }}>
                                     <div><b>Descrizione:</b> {selectedTx.description}</div>
-                                    <div><b>Importo:</b> <span style={{ color: selectedTx.type === 'entrata' ? '#34C759' : '#FF3B30', fontWeight: 600 }}>{formatAmount(selectedTx.amount)} €</span></div>
+                                    <div><b>Importo:</b> <span style={{ color: selectedTx.type === 'entrata' ? '#34C759' : '#FF3B30', fontWeight: 600 }}>{formatAmount(selectedTx.amount, selectedTx.type)} €</span></div>
                                     <div><b>Categoria:</b> {selectedTx.category}</div>
                                     <div><b>Conto:</b> {selectedTx.account || '-'}</div>
                                     <div><b>Tipo:</b> {selectedTx.type === 'entrata' ? 'Entrata' : 'Uscita'}</div>
@@ -1300,8 +1337,8 @@
                                 </div>
                                 <div style={{ marginBottom: 12 }}>
                                     <div><b>Nome:</b> {selectedAccount.name}</div>
-                                    <div><b>Saldo iniziale:</b> {selectedAccount.balance.toFixed(2).replace('.', ',')} €</div>
-                                    <div><b>Saldo attuale:</b> <span className="amount" style={{ color: '#34C759', fontWeight: 600 }}>{getAccountBalance(selectedAccount).toFixed(2).replace('.', ',')} €</span></div>
+                                    <div><b>Saldo iniziale:</b> {selectedAccount.balance >= 0 ? '+' : '-'}{Math.abs(selectedAccount.balance).toFixed(2).replace('.', ',')} €</div>
+                                    <div><b>Saldo attuale:</b> <span className="amount" style={{ color: '#34C759', fontWeight: 600 }}>{getAccountBalance(selectedAccount) >= 0 ? '+' : '-'}{Math.abs(getAccountBalance(selectedAccount)).toFixed(2).replace('.', ',')} €</span></div>
                                     <div style={{ marginTop: 8, fontSize: 13, color: '#8E8E93' }}>
                                         Il saldo attuale è calcolato sommando il saldo iniziale e tutte le transazioni associate a questo conto.
                                     </div>
@@ -1325,6 +1362,153 @@
                                     >
                                         Elimina
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showSearchModal && (
+                        <div className="modalOverlay">
+                            <div className="modal">
+                                <div className="modalHeader">
+                                    <h2 className="modalTitle">Cerca transazione</h2>
+                                    <button className="closeButton" onClick={() => setShowSearchModal(false)}>×</button>
+                                </div>
+                                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: 15, fontWeight: 500, display: 'block', marginBottom: 4 }}>Data iniziale</label>
+                                        <input
+                                            className="input"
+                                            type="date"
+                                            value={searchFrom}
+                                            onChange={e => setSearchFrom(e.target.value)}
+                                        />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: 15, fontWeight: 500, display: 'block', marginBottom: 4 }}>Data finale</label>
+                                        <input
+                                            className="input"
+                                            type="date"
+                                            value={searchTo}
+                                            onChange={e => setSearchTo(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div style={{ marginBottom: 12 }}>
+                                    <button 
+                                        className="button saveButton" 
+                                        style={{ width: '100%' }}
+                                        onClick={() => {
+                                            const from = searchFrom ? new Date(searchFrom) : null;
+                                            const to = searchTo ? new Date(searchTo) : null;
+                                            
+                                            const results = transactions
+                                                .map(tx => {
+                                                    // Per le transazioni ricorrenti, generiamo tutte le occorrenze nel periodo
+                                                    if (tx.repeat !== 'nessuna') {
+                                                        const occurrences = [];
+                                                        let currentDate = new Date(tx.date);
+                                                        
+                                                        while (currentDate <= to) {
+                                                            if (currentDate >= from) {
+                                                                occurrences.push({
+                                                                    ...tx,
+                                                                    displayDate: new Date(currentDate)
+                                                                });
+                                                            }
+                                                            
+                                                            // Calcola la prossima data in base alla ricorrenza
+                                                            switch (tx.repeat) {
+                                                                case 'giornaliera':
+                                                                    currentDate.setDate(currentDate.getDate() + 1);
+                                                                    break;
+                                                                case 'settimanale':
+                                                                    currentDate.setDate(currentDate.getDate() + 7);
+                                                                    break;
+                                                                case 'mensile':
+                                                                    currentDate.setMonth(currentDate.getMonth() + 1);
+                                                                    break;
+                                                                case 'trimestrale':
+                                                                    currentDate.setMonth(currentDate.getMonth() + 3);
+                                                                    break;
+                                                                case 'semestrale':
+                                                                    currentDate.setMonth(currentDate.getMonth() + 6);
+                                                                    break;
+                                                                case 'annuale':
+                                                                    currentDate.setFullYear(currentDate.getFullYear() + 1);
+                                                                    break;
+                                                            }
+                                                            
+                                                            // Se c'è una data di fine, controlla se l'abbiamo superata
+                                                            if (tx.endDate && new Date(tx.endDate) < currentDate) {
+                                                                break;
+                                                            }
+                                                        }
+                                                        return occurrences;
+                                                    } else {
+                                                        // Per le transazioni non ricorrenti, usa la data originale
+                                                        return [{
+                                                            ...tx,
+                                                            displayDate: tx.displayDate ? new Date(tx.displayDate) : (tx.date ? new Date(tx.date) : null)
+                                                        }];
+                                                    }
+                                                })
+                                                .flat() // Appiattisce l'array di array
+                                                .filter(tx => {
+                                                    if (!tx.displayDate) return false;
+                                                    if (from && tx.displayDate < from) return false;
+                                                    if (to && tx.displayDate > to) return false;
+                                                    return true;
+                                                })
+                                                .sort((a, b) => a.displayDate - b.displayDate);
+                                            
+                                            setSearchResults(results);
+                                        }}
+                                    >
+                                        Cerca
+                                    </button>
+                                </div>
+                                <div style={{ maxHeight: 260, overflowY: 'auto', marginBottom: 12 }}>
+                                    {searchResults.length === 0 ? (
+                                        <div style={{ color: '#8E8E93', textAlign: 'center', margin: 12 }}>
+                                            {searchResults.length === 0 && searchFrom && searchTo ? 'Nessuna transazione trovata nel periodo selezionato.' : 'Seleziona un intervallo di date e clicca su Cerca.'}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div style={{ fontWeight: 500, fontSize: 15, marginBottom: 6, color: '#444' }}>Transazioni trovate:</div>
+                                            <div>
+                                                {searchResults.map(tx => {
+                                                    return (
+                                                        <div key={tx.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E5E5EA', padding: '6px 0' }}>
+                                                            <div style={{ flex: 2 }}>
+                                                                <div style={{ fontWeight: 600 }}>{tx.description}</div>
+                                                                <div style={{ fontSize: 13, color: '#8E8E93' }}>{tx.displayDate ? tx.displayDate.toLocaleDateString('it-IT') : ''} {tx.account ? `- ${tx.account}` : ''}</div>
+                                                            </div>
+                                                            <div style={{ flex: 1, textAlign: 'right', fontWeight: 600, color: tx.type === 'entrata' ? '#34C759' : '#FF3B30' }}>
+                                                                {formatAmount(tx.amount, tx.type)} €
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                <div style={{ fontWeight: 600, fontSize: 16, textAlign: 'right', color: '#34C759' }}>
+                                                    Entrate: +{searchResults.filter(tx => tx.type === 'entrata').reduce((sum, tx) => sum + parseFloat(tx.amount || '0'), 0).toFixed(2).replace('.', ',')} €
+                                                </div>
+                                                <div style={{ fontWeight: 600, fontSize: 16, textAlign: 'right', color: '#FF3B30' }}>
+                                                    Uscite: -{searchResults.filter(tx => tx.type === 'uscita').reduce((sum, tx) => sum + parseFloat(tx.amount || '0'), 0).toFixed(2).replace('.', ',')} €
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="buttonContainer">
+                                    <button className="button cancelButton" onClick={() => {
+                                        setShowSearchModal(false);
+                                        setSearchResults([]);
+                                        setSearchFrom('');
+                                        setSearchTo('');
+                                    }}>Chiudi</button>
                                 </div>
                             </div>
                         </div>
